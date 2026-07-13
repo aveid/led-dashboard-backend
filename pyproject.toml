@@ -1,0 +1,108 @@
+# =============================================================================
+# pyproject.toml — зависимости и настройки инструментов бэкенда (стек FastAPI).
+#
+# За что отвечает файл:
+#   • перечисляет зависимости (runtime и dev);
+#   • настраивает инструменты качества: ruff, black, mypy, pytest;
+#   • явно указывает пакеты проекта (packages.find) — без этого `pip install .`
+#     в «плоском» репозитории (без src/-раскладки) не может однозначно понять,
+#     что ставить, и падает с ошибкой «Multiple top-level packages discovered».
+#     Это нужно и для Docker-сборки, и для локальной editable-установки.
+#
+# Смена стека Django → FastAPI затронула только этот файл и внешние слои
+# (config / infrastructure / presentation). Доменный и прикладной слои —
+# чистый Python и не зависят от фреймворка, поэтому переезд их не коснулся.
+# =============================================================================
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "led-dashboard-backend"
+version = "0.1.0"
+description = "Backend (FastAPI) дашборда учёта LED-экранов по Кыргызстану"
+requires-python = ">=3.12"
+
+# --- Runtime-зависимости ---
+dependencies = [
+    "fastapi>=0.111",             # веб-фреймворк (ASGI), авто-OpenAPI
+    "uvicorn[standard]>=0.30",    # ASGI-сервер для запуска приложения
+    "pydantic>=2.7",              # валидация и схемы (v2)
+    "pydantic-settings>=2.3",     # конфигурация из .env (замена Django settings)
+    "SQLAlchemy>=2.0",            # ORM (используем синхронный режим — просто и надёжно)
+    "GeoAlchemy2>=0.15",          # гео-типы для PostGIS (Geometry POINT)
+    "shapely>=2.0",               # чтение координат из гео-объекта (Point -> lng/lat)
+    "psycopg[binary]>=3.1",       # драйвер PostgreSQL (URL: postgresql+psycopg)
+    "alembic>=1.13",              # миграции схемы БД (замена Django-миграций)
+    "PyJWT>=2.8",                 # выпуск/проверка JWT-токенов
+    "passlib[bcrypt]>=1.7",       # хеширование паролей
+    # passlib 1.7.4 несовместим с bcrypt>=4.1 (убран __about__ + запрет паролей
+    # >72 байт ломает detect_wrap_bug при инициализации backend). Пинуем bcrypt на
+    # последнюю совместимую ветку 4.0.x — иначе hash/verify падают на старте.
+    "bcrypt<4.1",
+    "python-multipart>=0.0.9",    # разбор форм и загрузка файлов (OAuth2 form, upload)
+    "openpyxl>=3.1",              # генерация Excel (FR-7)
+    "boto3>=1.34",               # клиент S3/MinIO (объектное хранилище файлов)
+]
+
+[project.optional-dependencies]
+# --- Зависимости только для разработки и тестов ---
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",                # тест-клиент для FastAPI (TestClient)
+    "ruff>=0.5",
+    "black>=24.0",
+    "mypy>=1.10",
+]
+
+# -----------------------------------------------------------------------------
+# setuptools — какие каталоги считать пакетами проекта.
+# Явный include нужен, т.к. в корне репозитория лежит несколько top-level
+# пакетов (config, core, features) — без него setuptools не может однозначно
+# выбрать, что ставить (см. пояснение вверху файла). migrations/ сюда не входит:
+# у неё нет __init__.py, Alembic обращается к ней напрямую через файловую систему
+# (script_location в alembic.ini), а не через импорт установленного пакета.
+# -----------------------------------------------------------------------------
+[tool.setuptools.packages.find]
+include = ["config*", "core*", "features*"]
+
+# -----------------------------------------------------------------------------
+# ruff — линтер (замена flake8/isort и др.).
+# -----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "N", "SIM", "C4"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "features", "config"]
+
+# -----------------------------------------------------------------------------
+# black — форматтер.
+# -----------------------------------------------------------------------------
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+# -----------------------------------------------------------------------------
+# mypy — проверка типов. В домене и приложении — строгий режим.
+# -----------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = ["features.*.domain.*", "features.*.application.*", "core.domain.*", "core.application.*"]
+disallow_untyped_defs = true
+disallow_any_generics = true
+
+# -----------------------------------------------------------------------------
+# pytest — тесты.
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]

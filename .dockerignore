@@ -1,0 +1,19 @@
+# .dockerignore — что не попадает в контекст сборки образа (быстрее и легче образ).
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+.git/
+.gitignore
+
+.env
+media/
+
+.vscode/
+.idea/

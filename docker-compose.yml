@@ -1,0 +1,91 @@
+# =============================================================================
+# docker-compose.yml — весь backend одной командой: `docker compose up -d`.
+#
+# За что отвечает: поднимает всё, что нужно бэкенду:
+#   • db      — PostgreSQL с расширением PostGIS (данные и гео-точки экранов);
+#   • minio   — S3-совместимое хранилище файлов (фото экранов, сканы договоров);
+#   • backend — само FastAPI-приложение (применяет миграции и запускает сервер).
+#
+# Фронтенд (Flutter Web) собирается отдельным образом/контейнером и сюда
+# не входит — по договорённости бэкенд и фронтенд разворачиваются раздельно.
+# Когда фронт будет готов, его сервис можно добавить сюда же или в отдельный
+# compose-файл, который использует тот же CORS_ORIGINS для доступа к API.
+# =============================================================================
+
+services:
+  # --- База данных с гео-расширением ---
+  db:
+    image: postgis/postgis:16-3.4   # PostgreSQL 16 + PostGIS 3.4 (нужен для Geometry)
+    environment:
+      POSTGRES_USER: led
+      POSTGRES_PASSWORD: led
+      POSTGRES_DB: led_dashboard
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data   # данные переживают перезапуск контейнера
+    healthcheck:
+      # backend ждёт этого healthcheck (depends_on: condition: service_healthy),
+      # чтобы не пытаться применить миграции раньше, чем БД готова принимать соединения.
+      test: ["CMD-SHELL", "pg_isready -U led -d led_dashboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Хранилище файлов (S3-совместимое), для фото и договоров ---
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+      # CORS для presigned-превью: Flutter Web (CanvasKit) грузит картинки через
+      # fetch с crossOrigin="anonymous". Без этого заголовка браузер режет ответ
+      # presigned-URL ("No 'Access-Control-Allow-Origin' header") → заглушка на карточке.
+      # dev: "*"; в проде заменить на конкретный origin фронта (ср. CORS_ORIGINS в .env).
+      # Смена env требует пересоздания контейнера (не restart): docker compose up -d minio.
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # веб-консоль MinIO
+    volumes:
+      - minio_data:/data
+
+  # --- Backend (FastAPI): применяет миграции и поднимает сервер ---
+  backend:
+    build: .
+    env_file:
+      - .env   # SECRET_KEY, CORS_ORIGINS, время жизни токена, демо-учётка (см. .env.example)
+    environment:
+      # Переопределяем только адрес БД: внутри сети compose сервис БД называется
+      # "db", а не "localhost" (localhost из .env актуален только для запуска
+      # backend напрямую на хосте, без Docker).
+      DATABASE_URL: postgresql+psycopg://led:led@db:5432/led_dashboard
+      # Объектное хранилище (MinIO). Внутренний адрес — сервис "minio" в сети
+      # compose; публичный — адрес, до которого дотягивается браузер/устройство
+      # (в dev это localhost:9000 с проброшенного порта). Ключи совпадают с
+      # MINIO_ROOT_USER/PASSWORD сервиса minio.
+      S3_BUCKET: led-attachments
+      S3_INTERNAL_ENDPOINT_URL: http://minio:9000
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_REGION: us-east-1
+      S3_PRESIGN_EXPIRE_SECONDS: "3600"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s   # даём время на применение миграций при первом старте
+
+volumes:
+  db_data:
+  minio_data:
