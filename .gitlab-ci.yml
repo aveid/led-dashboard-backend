@@ -1,0 +1,52 @@
+include:
+  - project: 'devops/templates/k8s/ci-cd'
+    ref: "main"
+    file:
+      - 'deployment.yaml'
+      - 'docker-build.yaml'
+      - 'trivy-check.yaml'
+
+.default_job:
+  when: manual 
+
+stages:
+  - Build
+  - Scan
+  - Deploy
+
+variables:
+  #HARBOR_PROJECT: neo-service
+  CONTAINER_IMAGE: $HARBOR_HOST/$HARBOR_PROJECT/$CI_PROJECT_NAME
+  VAULT_PATH: led
+  VAULT_ROLE: k8s
+
+Build Service:
+  extends: 
+    - .build_service
+    - .default_job
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        DOCKER_TAG: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      variables:
+        DOCKER_TAG: test-$CI_PIPELINE_ID
+   
+Deploy Service:
+  stage: Deploy
+  extends: 
+    - .k8s-deployment
+    - .default_job
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        KUBE_CONTEXT: k8s-mega-prod
+        DOCKER_TAG: $CI_COMMIT_TAG
+        KUBE_NAMESPACE: led-dashboard
+        KUBE_CONTEXT: k8s-mega-prod
+    - if: '$CI_COMMIT_BRANCH == "dev"' 
+      variables:
+        KUBE_CONTEXT: k8s-mega-test
+        DOCKER_TAG: test-$CI_PIPELINE_ID
+        KUBE_NAMESPACE: led-dashboard-test
+        KUBE_CONTEXT: k8s-mega-test
