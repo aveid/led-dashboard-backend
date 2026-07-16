@@ -1,7 +1,7 @@
 # Используем ваш приватный registry
 FROM registry.megacom.kg/docker/library/python:3.12-slim
 
-# Настраиваем прокси для скачивания пакетов и переменные Python
+# Настраиваем прокси
 ENV http_proxy=http://10.231.245.243:3128 \
     https_proxy=http://10.231.245.243:3128 \
     HTTP_PROXY=http://10.231.245.243:3128 \
@@ -11,8 +11,9 @@ ENV http_proxy=http://10.231.245.243:3128 \
 
 WORKDIR /app
 
+# Устанавливаем curl и awk (awk нужен для parse-vault.sh)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl gawk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -22,7 +23,10 @@ RUN mkdir -p /app/media
 
 EXPOSE 8000
 
-CMD ["/bin/bash", "-c", "bash ./parse-vault.sh &&  bash ./start.sh"]
+# Запускаем цепочку скриптов
+CMD ["/bin/bash", "-c", "bash ./parse-vault.sh && bash ./start.sh"]
+
+
 #CMD ["sh", "-c", ". /vault/secrets/env && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
 #CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
 
