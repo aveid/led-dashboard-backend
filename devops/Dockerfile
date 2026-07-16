@@ -22,7 +22,8 @@ RUN mkdir -p /app/media
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", ". /vault/secrets/env && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+#CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
 
 
 
