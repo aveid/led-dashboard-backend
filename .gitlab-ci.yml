@@ -17,7 +17,7 @@ stages:
 variables:
   #HARBOR_PROJECT: neo-service
   CONTAINER_IMAGE: $HARBOR_HOST/$HARBOR_PROJECT/$CI_PROJECT_NAME
-  VAULT_PATH: led
+  VAULT_PATH: led-dashboard
   VAULT_ROLE: k8s
 
 Build Service:
