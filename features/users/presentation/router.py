@@ -15,6 +15,7 @@
 Пароль/хеш наружу не отдаются никогда (UserRead их не содержит).
 """
 
+
 from __future__ import annotations
 
 from typing import Annotated
