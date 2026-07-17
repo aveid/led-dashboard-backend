@@ -11,6 +11,7 @@ def city_to_read(city: City, screens_count: int = 0) -> CityRead:
     """Доменный City → схема ответа API.
 
     screens_count передаётся отдельно (это агрегат из запроса, не поле сущности);
+    
     по умолчанию 0 — например, когда город отдаётся вложенным в карточку экрана.
     """
     return CityRead(
