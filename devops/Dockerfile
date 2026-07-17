@@ -24,7 +24,7 @@ RUN mkdir -p /app/media
 EXPOSE 8000
 
 # Запускаем цепочку скриптов
-CMD ["/bin/bash", "-c", "bash ./parse-vault.sh && bash ./start.sh"]
+#CMD ["/bin/bash", "-c", "bash ./parse-vault.sh && bash ./start.sh"]
 
 
 #CMD ["sh", "-c", ". /vault/secrets/env && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]

@@ -22,6 +22,13 @@ containers:
       requests:
         cpu: "100m"
         memory: "128Mi"
+    command: ["/bin/bash", "-c"]
+    args: 
+      - |
+        set -a
+        source /vault/secrets/config.txt
+        set +a
+        ./start.sh
 
 vault:
   enabled: true 
