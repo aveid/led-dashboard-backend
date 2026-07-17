@@ -40,17 +40,84 @@ service:
 
 ingress:
   enabled: true
-  
   led-dashboard-test:
     ingressClassName: nginx
     hosts:
       - host: led-dashboard-backend.test.megacom.local
         paths:
           - /
-          
   led-dashboard:
     ingressClassName: nginx
     hosts:
       - host: led-dashboard-backend.megacom.local
         paths:
           - /
+
+# --- ИСПРАВЛЕНИЕ ПРОКСИ (Блоки по имени неймспейса) ---
+
+led-dashboard-test:
+  env:
+    NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+    no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+
+led-dashboard:
+  env:
+    NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+    no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+
+# nameOverride: "led-dashboard-backend"
+# fullNameOverride: "led-dashboard-backend"
+
+# containers:
+#   - name: led-dashboard-backend
+#     livenessProbe:
+#       httpGet:
+#         path: /api/health  
+#         port: 8000
+#       initialDelaySeconds: 30
+#       periodSeconds: 10
+#     readinessProbe:
+#       httpGet:
+#         path: /api/health  
+#         port: 8000
+#       initialDelaySeconds: 30
+#       periodSeconds: 10
+#     resources:
+#       limits:
+#         cpu: "500m"
+#         memory: "512Mi"
+#       requests:
+#         cpu: "100m"
+#         memory: "128Mi"
+#     command: ["/bin/bash", "-c"]
+#     args: 
+#       - |
+#         set -a
+#         source /vault/secrets/config.txt
+#         set +a
+#         bash ./start.sh
+
+# vault:
+#   enabled: true 
+
+# service:
+#   type: ClusterIP
+#   port: 80
+#   targetPort: 8000
+
+# ingress:
+#   enabled: true
+  
+#   led-dashboard-test:
+#     ingressClassName: nginx
+#     hosts:
+#       - host: led-dashboard-backend.test.megacom.local
+#         paths:
+#           - /
+          
+#   led-dashboard:
+#     ingressClassName: nginx
+#     hosts:
+#       - host: led-dashboard-backend.megacom.local
+#         paths:
+#           - /
