@@ -28,7 +28,7 @@ containers:
         set -a
         source /vault/secrets/config.txt
         set +a
-        ./start.sh
+        bash ./start.sh
 
 vault:
   enabled: true 
