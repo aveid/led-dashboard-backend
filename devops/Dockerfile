@@ -11,6 +11,7 @@ ENV http_proxy=http://10.231.245.243:3128 \
 
 WORKDIR /app
 
+
 # Устанавливаем curl и awk (awk нужен для parse-vault.sh)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl gawk \
