@@ -15,6 +15,7 @@
     достаточно поменять BISHKEK_TZ на ZoneInfo и добавить tzdata.
 """
 
+
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
