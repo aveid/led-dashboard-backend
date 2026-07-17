@@ -19,6 +19,7 @@
     сопоставление «ошибка → статус» собрано здесь (принцип DRY и разделение слоёв).
 """
 
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
