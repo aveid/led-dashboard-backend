@@ -3,7 +3,7 @@ FROM registry.megacom.kg/docker/library/python:3.12-slim
 
 # Настраиваем прокси
 ENV http_proxy=http://10.231.245.243:3128 \
-    https_proxy=http://10.231.245.243:3128 \
+    https_proxy=http://10.231.245.243:3128 \  #настроить прокси, тут они тут глобальные, нужно добавить no proxy, либо настроить проскисрование для каждого слоя либо сделать unset в конце
     HTTP_PROXY=http://10.231.245.243:3128 \
     HTTPS_PROXY=http://10.231.245.243:3128 \
     PYTHONDONTWRITEBYTECODE=1 \
