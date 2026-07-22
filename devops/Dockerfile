@@ -1,82 +1,55 @@
-# Используем ваш приватный registry
+# Приватный registry
 FROM registry.megacom.kg/docker/library/python:3.12-slim
 
-# Настраиваем прокси
-ENV http_proxy=http://10.231.245.243:3128 \
-    https_proxy=http://10.231.245.243:3128 \  #настроить прокси, тут они тут глобальные, нужно добавить no proxy, либо настроить проскисрование для каждого слоя либо сделать unset в конце
-    HTTP_PROXY=http://10.231.245.243:3128 \
-    HTTPS_PROXY=http://10.231.245.243:3128 \
-    PYTHONDONTWRITEBYTECODE=1 \
+# Прокси через ARG — доступен apt/pip во ВСЕХ RUN при сборке,
+# но НЕ сохраняется в образ → под не наследует прокси в рантайме.
+# Ни no_proxy, ни unset больше не нужны — прокси физически нет в образе.
+ARG http_proxy=http://10.231.245.243:3128
+ARG https_proxy=http://10.231.245.243:3128
+ARG HTTP_PROXY=http://10.231.245.243:3128
+ARG HTTPS_PROXY=http://10.231.245.243:3128
+
+# В образ идут только настоящие рантайм-переменные:
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-
-# Устанавливаем curl и awk (awk нужен для parse-vault.sh)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl gawk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 RUN pip install --no-cache-dir .
-
 RUN mkdir -p /app/media
 
 EXPOSE 8000
 
-# Запускаем цепочку скриптов
-#CMD ["/bin/bash", "-c", "bash ./parse-vault.sh && bash ./start.sh"]
 
 
-#CMD ["sh", "-c", ". /vault/secrets/env && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
-#CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+# # Используем ваш приватный registry
+# FROM registry.megacom.kg/docker/library/python:3.12-slim
 
-
-
-# # =============================================================================
-# # Dockerfile — образ backend-сервиса (FastAPI).
-# #
-# # За что отвечает:
-# #   Собирает контейнер с приложением: ставит зависимости, копирует исходники,
-# #   при старте применяет миграции БД и поднимает uvicorn. Рассчитан на
-# #   docker-compose (см. docker-compose.yml) — сам по себе, без БД рядом, работать
-# #   не будет (нужен сервис db).
-# #
-# # Один образ на весь бэкенд: фронтенд (Flutter Web) будет собираться отдельным
-# # образом/контейнером — они не смешиваются.
-# # =============================================================================
-
-# FROM python:3.12-slim
-
-# # PYTHONDONTWRITEBYTECODE — не писать .pyc (не нужны в контейнере, короткоживущем).
-# # PYTHONUNBUFFERED — логи Python сразу попадают в `docker logs`, без буферизации.
-# ENV PYTHONDONTWRITEBYTECODE=1 \
+# # Настраиваем прокси
+# ENV http_proxy=http://10.231.245.243:3128 \
+#     https_proxy=http://10.231.245.243:3128 \  #настроить прокси, тут они тут глобальные, нужно добавить no proxy, либо настроить проскисрование для каждого слоя либо сделать unset в конце
+#     HTTP_PROXY=http://10.231.245.243:3128 \
+#     HTTPS_PROXY=http://10.231.245.243:3128 \
+#     PYTHONDONTWRITEBYTECODE=1 \
 #     PYTHONUNBUFFERED=1
 
 # WORKDIR /app
 
-# # curl нужен только для healthcheck (см. docker-compose.yml).
-# # psycopg[binary] и shapely ставятся из готовых wheel-колёс (бинарники libpq/geos
-# # уже внутри), поэтому gcc/libpq-dev/libgeos-dev здесь не нужны — образ легче.
+
+# # Устанавливаем curl и awk (awk нужен для parse-vault.sh)
 # RUN apt-get update \
-#     && apt-get install -y --no-install-recommends curl \
+#     && apt-get install -y --no-install-recommends curl gawk \
 #     && rm -rf /var/lib/apt/lists/*
 
-# # Копируем весь код и ставим зависимости проекта (runtime, без dev-инструментов —
-# # линт/тесты гоняем локально/в CI, не в образе). pip install . читает pyproject.toml
-# # и ставит и зависимости, и сам проект (нужно для корректного резолва пакетов).
 # COPY . .
 # RUN pip install --no-cache-dir .
 
-# # Каталог для локально сохранённых файлов (фото/договоры), см. config/settings.py
-# # media_root. В compose монтируется как volume, чтобы данные переживали пересборку.
 # RUN mkdir -p /app/media
 
 # EXPOSE 8000
 
-
-# # Перед стартом сервера применяем миграции — удобно для разработки (одна команда
-# # `docker compose up` поднимает и БД, и актуальную схему, и сервер). Для прод-режима
-# # с несколькими репликами миграции лучше выносить в отдельный шаг деплоя, но для
-# # внутреннего дашборда с одним инстансом это не проблема.
-# CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]

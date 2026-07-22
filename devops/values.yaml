@@ -55,15 +55,15 @@ ingress:
 
 # --- ИСПРАВЛЕНИЕ ПРОКСИ (Блоки по имени неймспейса) ---
 
-led-dashboard-test:
-  env:
-    NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
-    no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+# led-dashboard-test:
+#   env:
+#     NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+#     no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
 
-led-dashboard:
-  env:
-    NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
-    no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+# led-dashboard:
+#   env:
+#     NO_PROXY: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
+#     no_proxy: "localhost,127.0.0.1,megacom.local,.megacom.local,10.0.0.0/8"
 
 # nameOverride: "led-dashboard-backend"
 # fullNameOverride: "led-dashboard-backend"
