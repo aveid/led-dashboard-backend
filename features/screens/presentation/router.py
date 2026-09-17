@@ -137,8 +137,10 @@ def list_screens(
         contract_end_before=contract_end_before,
     )
     screens = ListScreensUseCase(repo).execute(filters)
-    # Простейшая пагинация на уровне ответа (для MVP достаточно).
-    page = screens[pagination.offset : pagination.offset + pagination.limit]
+    # Простейшая пагинация на уровне ответа (для MVP достаточно). limit=None
+    # (по умолчанию, см. PaginationParams) — вернуть весь список без обрезания.
+    end = None if pagination.limit is None else pagination.offset + pagination.limit
+    page = screens[pagination.offset : end]
     is_guest = current_user.role is UserRole.GUEST
     return [screen_to_read(s, storage, expiry, is_guest=is_guest) for s in page]
 

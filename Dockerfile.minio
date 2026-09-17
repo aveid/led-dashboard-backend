@@ -13,7 +13,9 @@
 # передаёт управление серверу на переднем плане.
 # =============================================================================
 
-FROM minio/minio:latest
+# quay.io/minio/minio — docker.io/minio/minio больше не тянется анонимно
+# (лицензионное изменение 2024, "pull access denied").
+FROM quay.io/minio/minio:latest
 
 # Имя бакета можно переопределить при билде: --build-arg BUCKET_NAME=other-bucket
 ARG BUCKET_NAME=led-attachments
